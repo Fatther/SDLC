@@ -1,0 +1,49 @@
+@startuml mvc
+
+class Main
+
+class AppController {
+  -model: BirthDateModel
+  -view: MainFrame
+  +onEnterDateRequested()
+}
+
+class BirthDateModel <<active model>> {
+  -birthDate: LocalDate
+  -fateText: String
+  +setBirthDate(day, month, year)
+  +addListener(listener)
+  +getLastDay(): int
+  +getLastMonth(): int
+  +getLastYear(): int
+}
+
+interface ModelChangeListener {
+  +onModelChanged(model)
+}
+
+class FateCalculator {
+  +{static} calculateFate(birthDate): String
+}
+
+class MainFrame <<view>> {
+  +onModelChanged(model)
+  +showError(message)
+}
+
+class DateInputDialog {
+  +isConfirmed(): boolean
+  +getSelectedDay(): int
+  +getSelectedMonth(): int
+  +getSelectedYear(): int
+}
+
+Main --> AppController : creates
+AppController --> BirthDateModel : changes
+AppController --> MainFrame : handles actions
+AppController ..> DateInputDialog : opens
+BirthDateModel ..> ModelChangeListener : notifies
+MainFrame ..|> ModelChangeListener
+BirthDateModel ..> FateCalculator : uses
+
+@enduml
