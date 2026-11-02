@@ -1,0 +1,17 @@
+@startuml
+left to right direction
+skinparam shadowing false
+
+actor "Покупатель" as buyer
+actor "Администратор" as admin
+actor "Гость по публичной ссылке" as guest
+rectangle "PriceRadar" as system
+node "Сайты магазинов" as shop
+node "Почтовый сервер" as mail
+
+buyer --> system : HTTPS: вишлист, скидки, план
+admin --> system : HTTPS: календарь, адаптеры
+guest --> system : HTTPS: просмотр списка
+system --> shop : HTTP GET: страницы товаров, robots.txt
+system --> mail : SMTP: письма и алерты
+@enduml

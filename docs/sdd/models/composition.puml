@@ -1,0 +1,42 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "Один JAR Spring Boot" {
+    [web-ui\nSPA, статические ресурсы] as ui
+    [api\nREST-контроллеры, OpenAPI] as api
+    [account] as account
+    [wishlist] as wishlist
+    [price-api\nPriceApiFacade, PriceSource, краулер] as priceapi
+    [monitor\nпланировщик проверок] as monitor
+    [alerts\nправила, outbox, каналы] as alerts
+    [advisor\nрекомендации, календарь] as advisor
+    [discounts\nлента, фиктивные скидки] as discounts
+    [planner\nплан покупок] as planner
+    [sharing\nпубличные ссылки] as sharing
+    [admin] as admin
+}
+database "PostgreSQL" as db
+
+ui --> api
+api --> account
+api --> wishlist
+api --> advisor
+api --> discounts
+api --> planner
+api --> sharing
+api --> admin
+wishlist --> priceapi
+monitor --> priceapi
+monitor --> alerts
+
+account --> db
+wishlist --> db
+monitor --> db
+alerts --> db
+advisor --> db
+discounts --> db
+planner --> db
+sharing --> db
+admin --> db
+@enduml

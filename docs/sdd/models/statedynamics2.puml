@@ -1,0 +1,11 @@
+@startuml
+skinparam shadowing false
+
+[*] --> New : алерт создан вместе с outbox
+New --> Sent : письмо принято
+New --> Retry : ошибка отправки, попытка < 5
+Retry --> Sent : повтор удался
+Retry --> Failed : 5 неудач
+Sent --> [*]
+Failed --> [*]
+@enduml

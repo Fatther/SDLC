@@ -1,0 +1,71 @@
+@startuml
+skinparam shadowing false
+hide circle
+skinparam linetype ortho
+
+entity APP_USER {
+    * id : uuid
+    --
+    email : string
+}
+entity PRODUCT_LIST {
+    * id : uuid
+    --
+    name : string
+}
+entity PRODUCT {
+    * id : uuid
+    --
+    url : string
+    target_price : numeric
+    priority : string
+    status : string
+    next_check_at : timestamp
+    fail_count : int
+}
+entity PRICE_POINT {
+    * id : uuid
+    --
+    price : numeric
+    in_stock : boolean
+    first_seen_at : timestamp
+    last_checked_at : timestamp
+}
+entity ALERT {
+    * id : uuid
+    --
+    old_price : numeric
+    new_price : numeric
+    status : string
+}
+entity OUTBOX_MESSAGE {
+    * id : uuid
+}
+entity SHARE_LINK {
+    * id : uuid
+    --
+    token_hash : string
+    created_at : timestamp
+    revoked_at : timestamp
+}
+entity SALE_EVENT {
+    * id : uuid
+    --
+    name : string
+    event_date : date
+}
+entity STORE_ADAPTER {
+    * id : uuid
+    --
+    enabled : boolean
+}
+
+APP_USER ||--o{ PRODUCT_LIST : owns
+APP_USER ||--o{ PRODUCT : tracks
+PRODUCT_LIST ||--o{ PRODUCT : groups
+PRODUCT ||--o{ PRICE_POINT : has
+PRODUCT ||--o{ ALERT : triggers
+ALERT ||--|| OUTBOX_MESSAGE : "delivered by"
+PRODUCT_LIST ||--o| SHARE_LINK : "published by"
+STORE_ADAPTER ||--o{ PRODUCT : serves
+@enduml
