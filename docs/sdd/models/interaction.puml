@@ -1,0 +1,31 @@
+@startuml
+skinparam shadowing false
+autonumber
+
+actor "Пользователь" as U
+participant "api" as API
+participant "wishlist" as WL
+participant "price-api" as PA
+participant "Сайт магазина" as S
+database "PostgreSQL" as DB
+
+U -> API : POST /products {url}
+API -> WL : add(url)
+WL -> PA : fetch(url)
+PA -> PA : проверка URL (SSRF), кэш
+
+alt в кэше нет
+    PA -> S : GET robots.txt, затем страница\n(не чаще 1 запроса в 2 с)
+    S --> PA : HTML
+    PA -> PA : JSON-LD или адаптер магазина
+end
+
+alt цена найдена
+    PA --> WL : PriceOffer
+    WL -> DB : INSERT product, price_point
+    WL --> U : 201 Created
+else ошибка
+    PA --> WL : 422 / 502
+    WL --> U : сообщение на русском с причиной
+end
+@enduml

@@ -1,0 +1,15 @@
+@startuml
+skinparam shadowing false
+
+[*] --> Active
+Active --> OutOfStock : нет в наличии
+OutOfStock --> Active : появился в наличии
+Active --> CheckError : 3 неудачные проверки подряд
+OutOfStock --> CheckError : 3 неудачные проверки подряд
+CheckError --> Active : успешная проверка
+Active --> Archived : архивирование
+OutOfStock --> Archived : архивирование
+CheckError --> Archived : архивирование
+Archived --> Active : возврат из архива
+Active --> [*] : удаление
+@enduml

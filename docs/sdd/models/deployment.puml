@@ -1,0 +1,27 @@
+@startuml
+skinparam shadowing false
+left to right direction
+
+node "Браузер" as browser
+
+node "Сервер: 2 vCPU, 2 ГБ ОЗУ, docker compose" as server {
+    node "Обратный прокси Caddy\nTLS 1.2+" as proxy
+    node "Контейнер app\nJAR, Java 21, -Xmx1024m" as app
+    database "Контейнер PostgreSQL" as db
+    folder "Резервные копии" as backups
+}
+
+node "Сайты магазинов" as shops
+node "Почтовый сервер" as mail
+
+browser --> proxy : HTTPS 443
+proxy --> app : HTTP 8080\n/, /api, /s
+app --> db : JDBC 5432
+app ..> backups : volume
+app --> shops : HTTPS
+app --> mail : SMTP
+
+note bottom of proxy
+  Маршрут /internal/** не публикуется
+end note
+@enduml

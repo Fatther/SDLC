@@ -1,0 +1,53 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+interface PriceSource {
+    +supports(url): boolean
+    +fetch(url): PriceOffer
+}
+class JsonLdPriceSource
+class ShopAPriceSource
+
+interface PriceApiClient {
+    +fetch(url): PriceOffer
+}
+class PriceApiFacade {
+    +fetch(url): PriceOffer
+}
+
+class PriceOffer {
+    +shop: String
+    +title: String
+    +imageUrl: String
+    +price: BigDecimal
+    +currency: String
+    +inStock: boolean
+    +fetchedAt: Instant
+}
+
+class RecommendationEngine {
+    +evaluate(history, today, events): Recommendation
+}
+enum Recommendation {
+    BUY_NOW
+    WAIT
+    NEUTRAL
+    NO_DATA
+}
+
+interface NotificationChannel {
+    +send(alert): void
+}
+class InAppChannel
+class EmailChannel
+
+PriceSource <|.. JsonLdPriceSource
+PriceSource <|.. ShopAPriceSource
+PriceApiClient <|.. PriceApiFacade
+PriceApiFacade --> "1..*" PriceSource
+PriceApiFacade ..> PriceOffer
+RecommendationEngine ..> Recommendation
+NotificationChannel <|.. InAppChannel
+NotificationChannel <|.. EmailChannel
+@enduml
