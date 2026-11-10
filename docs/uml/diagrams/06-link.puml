@@ -1,0 +1,14 @@
+@startuml 06-state-sharelink
+title Состояния публичной ссылки (ShareLink)
+
+[*] --> Absent
+Absent --> Active : PUT /lists/{id}/share /\nсгенерировать токен,\nсохранить SHA-256
+Active --> Active : PUT /lists/{id}/share /\nновый токен, прежний недействителен
+Active --> Revoked : DELETE /lists/{id}/share /\nпометить отозванной
+Revoked --> Active : PUT /lists/{id}/share /\nновый токен
+Active --> [*] : удаление списка\nили учётной записи
+Revoked --> [*] : удаление списка\nили учётной записи
+
+Active : GET /s/{token} возвращает список
+Revoked : GET /s/{token} возвращает 404
+@enduml
