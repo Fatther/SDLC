@@ -1,0 +1,89 @@
+@startuml 01-usecase
+title Диаграмма вариантов использования PriceRadar
+left to right direction
+
+actor "Гость" as Guest
+actor "Покупатель" as Buyer
+actor "Администратор" as Admin
+actor "Время\n(планировщик)" as Timer
+actor "Сайт магазина" as Shop <<внешняя система>>
+actor "Почтовый шлюз" as Mail <<внешняя система>>
+
+Buyer <|-- Admin
+
+rectangle "PriceRadar" {
+  package "Учётная запись" {
+    usecase "UC-01\nЗарегистрироваться" as UC01
+    usecase "UC-02\nВойти и выйти" as UC02
+    usecase "UC-03\nУдалить учётную запись" as UC03
+  }
+  package "Вишлист" {
+    usecase "UC-04\nДобавить товар по ссылке" as UC04
+    usecase "UC-05\nПолучить цену\nчерез Price API" as UC05
+    usecase "UC-06\nИзменить параметры товара" as UC06
+    usecase "UC-07\nУдалить или архивировать товар" as UC07
+    usecase "UC-08\nУправлять списками" as UC08
+  }
+  package "Аналитика" {
+    usecase "UC-10\nПросмотреть ленту скидок" as UC10
+    usecase "UC-11\nПометить фиктивную скидку" as UC11
+    usecase "UC-12\nПросмотреть рекомендацию\nи график цены" as UC12
+    usecase "UC-13\nСоставить план покупок" as UC13
+    usecase "UC-14\nВыгрузить историю в CSV" as UC14
+  }
+  package "Алерты и публикация" {
+    usecase "UC-09\nНастроить проверки и алерты" as UC09
+    usecase "UC-15\nОпубликовать или отозвать\nссылку на список" as UC15
+    usecase "UC-16\nПросмотреть публичный список" as UC16
+  }
+  package "Фоновая обработка" {
+    usecase "UC-17\nПроверить цену товара" as UC17
+    usecase "UC-18\nДоставить алерт" as UC18
+  }
+  package "Администрирование" {
+    usecase "UC-19\nРедактировать календарь\nраспродаж" as UC19
+    usecase "UC-20\nВключить или отключить\nадаптер магазина" as UC20
+  }
+}
+
+Guest --> UC01
+Guest --> UC16
+Buyer --> UC02
+Buyer --> UC03
+Buyer --> UC04
+Buyer --> UC06
+Buyer --> UC07
+Buyer --> UC08
+Buyer --> UC09
+Buyer --> UC10
+Buyer --> UC12
+Buyer --> UC13
+Buyer --> UC14
+Buyer --> UC15
+Admin --> UC19
+Admin --> UC20
+Timer --> UC17
+
+UC04 ..> UC05 : <<include>>
+UC17 ..> UC05 : <<include>>
+UC13 ..> UC12 : <<include>>
+UC11 ..> UC10 : <<extend>>
+UC18 ..> UC17 : <<extend>>
+
+UC05 -- Shop
+UC01 -- Mail
+UC18 -- Mail
+
+note right of UC10
+  Точка расширения: «скидка помечена
+  как возможно фиктивная»
+end note
+note right of UC17
+  Точка расширения: «цена изменилась
+  и выполнено условие алерта»
+end note
+note bottom of Admin
+  Администратор обобщает Покупателя:
+  ему доступны все прецеденты Покупателя
+end note
+@enduml

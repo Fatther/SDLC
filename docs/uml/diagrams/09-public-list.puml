@@ -1,0 +1,62 @@
+@startuml 09-sequence-public-list
+title Последовательность: просмотр публичного списка (UC-15, UC-16)
+autonumber
+
+actor "Гость" as G
+actor "Покупатель\n(владелец)" as O
+boundary "Клиент SPA" as UI
+control "ShareController" as SC
+participant "IpRateLimiter\n(60 запросов/мин)" as RL
+control "ShareService" as SS
+participant "WishlistReader" as WR
+database "PostgreSQL" as DB
+
+== Публикация ==
+O -> UI : «Поделиться списком»
+UI -> SC : PUT /api/v1/lists/{id}/share
+activate SC
+SC -> SS : createOrRotate(listId, ownerId)
+activate SS
+SS -> SS : token = random(32 байта)
+SS -> DB : UPSERT share_link(list_id, token_hash = SHA-256(token))
+DB --> SS : OK
+SS --> SC : token
+deactivate SS
+SC --> UI : 200 {url: /s/{token}}
+deactivate SC
+UI --> O : ссылка для копирования
+
+== Просмотр ==
+G -> UI : открывает /s/{token}
+UI -> SC : GET /s/{token}
+activate SC
+SC -> RL : tryAcquire(ip)
+alt лимит превышен
+  RL --> SC : отказ
+  SC --> UI : 429 + Retry-After
+  UI --> G : «Слишком много запросов»
+else лимит не превышен
+  RL --> SC : OK
+  SC -> SS : resolve(token)
+  activate SS
+  SS -> DB : SELECT … WHERE token_hash = SHA-256(token)\nAND revoked_at IS NULL
+  DB --> SS : запись или пусто
+  alt ссылка не найдена или отозвана
+    SS --> SC : не найдено
+    SC --> UI : 404
+    UI --> G : «Ссылка недействительна»
+  else ссылка активна
+    SS -> WR : readPublic(listId)
+    activate WR
+    WR -> DB : SELECT товары списка
+    DB --> WR : строки
+    WR --> SS : публичное представление
+    deactivate WR
+    SS --> SC : список (только чтение)
+    deactivate SS
+    SC --> UI : 200 JSON
+    UI --> G : список без приватных данных
+  end
+end
+deactivate SC
+@enduml

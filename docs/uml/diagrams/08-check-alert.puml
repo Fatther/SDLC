@@ -1,0 +1,76 @@
+@startuml 08-sequence-price-alert
+title Последовательность: проверка цены и доставка алерта (UC-17, UC-18)
+autonumber
+
+actor "Время" as T
+control "Scheduler" as S
+control "MonitorWorker" as MW
+control "PriceApiFacade" as PF
+control "AlertService" as AS
+participant "OutboxWorker" as OW
+participant "Почтовый шлюз" as MG <<внешняя система>>
+database "PostgreSQL" as DB
+actor "Покупатель" as U
+
+T -> S : срабатывание по расписанию
+activate S
+S -> DB : SELECT … WHERE next_check_at <= now()\nFOR UPDATE SKIP LOCKED LIMIT n
+DB --> S : пачка товаров
+S -> MW : check(product) — для каждого товара
+deactivate S
+activate MW
+
+loop для каждого товара из пачки
+  MW -> PF : fetch(url)
+  activate PF
+  alt цена получена
+    PF --> MW : PriceQuote
+    deactivate PF
+    MW -> DB : INSERT или UPDATE price_history\n(по правилу REQ-FUNC-009)
+    opt цена изменилась и выполнено условие алерта
+      MW -> AS : onPriceChanged(product, quote)
+      activate AS
+      AS -> AS : проверить дедупликацию\n(та же цена; ≤ 3 в сутки)
+      alt алерт разрешён
+        create participant "Транзакция" as TX
+        AS -> TX : begin
+        AS -> DB : INSERT alert, INSERT outbox
+        AS -> TX : commit
+        destroy TX
+      else подавлен
+        AS --> MW : без алерта
+      end
+      deactivate AS
+    end
+  else ошибка или тайм-аут
+    PF --> MW : ошибка
+    MW -> DB : error_count++, next_check_at (1, 2, 4 мин)
+    opt error_count = 3
+      MW -> AS : onCheckFailed(product)
+    end
+  end
+  MW -> DB : UPDATE next_check_at
+end
+deactivate MW
+
+== Асинхронная доставка (отдельный поток) ==
+loop пока есть сообщения
+  OW -> DB : SELECT outbox WHERE status = PENDING\nFOR UPDATE SKIP LOCKED
+  DB --> OW : сообщение
+  activate OW
+  OW -> MG : отправить письмо
+  activate MG
+  alt успех
+    MG --> OW : 250 OK
+    deactivate MG
+    OW -> DB : status = DELIVERED
+    OW -> U : алерт в приложении и письмо
+  else ошибка, попыток < 5
+    MG --> OW : ошибка SMTP
+    OW -> DB : attempts++, next_attempt_at
+  else попытки исчерпаны
+    OW -> DB : status = FAILED, запись в журнал
+  end
+  deactivate OW
+end
+@enduml
