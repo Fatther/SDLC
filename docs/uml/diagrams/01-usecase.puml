@@ -1,89 +1,108 @@
-@startuml 01-usecase
-title Диаграмма вариантов использования PriceRadar
+@startuml
 left to right direction
+skinparam linetype ortho
 
-actor "Гость" as Guest
-actor "Покупатель" as Buyer
-actor "Администратор" as Admin
-actor "Время\n(планировщик)" as Timer
-actor "Сайт магазина" as Shop <<внешняя система>>
-actor "Почтовый шлюз" as Mail <<внешняя система>>
-
-Buyer <|-- Admin
-
-rectangle "PriceRadar" {
-  package "Учётная запись" {
-    usecase "UC-01\nЗарегистрироваться" as UC01
-    usecase "UC-02\nВойти и выйти" as UC02
-    usecase "UC-03\nУдалить учётную запись" as UC03
-  }
-  package "Вишлист" {
-    usecase "UC-04\nДобавить товар по ссылке" as UC04
-    usecase "UC-05\nПолучить цену\nчерез Price API" as UC05
-    usecase "UC-06\nИзменить параметры товара" as UC06
-    usecase "UC-07\nУдалить или архивировать товар" as UC07
-    usecase "UC-08\nУправлять списками" as UC08
-  }
-  package "Аналитика" {
-    usecase "UC-10\nПросмотреть ленту скидок" as UC10
-    usecase "UC-11\nПометить фиктивную скидку" as UC11
-    usecase "UC-12\nПросмотреть рекомендацию\nи график цены" as UC12
-    usecase "UC-13\nСоставить план покупок" as UC13
-    usecase "UC-14\nВыгрузить историю в CSV" as UC14
-  }
-  package "Алерты и публикация" {
-    usecase "UC-09\nНастроить проверки и алерты" as UC09
-    usecase "UC-15\nОпубликовать или отозвать\nссылку на список" as UC15
-    usecase "UC-16\nПросмотреть публичный список" as UC16
-  }
-  package "Фоновая обработка" {
-    usecase "UC-17\nПроверить цену товара" as UC17
-    usecase "UC-18\nДоставить алерт" as UC18
-  }
-  package "Администрирование" {
-    usecase "UC-19\nРедактировать календарь\nраспродаж" as UC19
-    usecase "UC-20\nВключить или отключить\nадаптер магазина" as UC20
-  }
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor White
+skinparam ArrowColor Black
+skinparam ArrowFontSize 10
+skinparam ActorBackgroundColor White
+skinparam ActorBorderColor Black
+skinparam ActorFontStyle bold
+skinparam ActorStereotypeFontSize 10
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+  FontSize 11
+}
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+  FontStyle bold
+  FontSize 12
+}
+skinparam frame {
+  BackgroundColor White
+  BorderColor Black
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor White
+  BorderColor Black
+  FontSize 10
 }
 
-Guest --> UC01
-Guest --> UC16
-Buyer --> UC02
-Buyer --> UC03
-Buyer --> UC04
-Buyer --> UC06
-Buyer --> UC07
-Buyer --> UC08
-Buyer --> UC09
-Buyer --> UC10
-Buyer --> UC12
-Buyer --> UC13
-Buyer --> UC14
-Buyer --> UC15
-Admin --> UC19
-Admin --> UC20
-Timer --> UC17
+frame "uc  PriceRadar 1.0" {
 
-UC04 ..> UC05 : <<include>>
-UC17 ..> UC05 : <<include>>
-UC13 ..> UC12 : <<include>>
-UC11 ..> UC10 : <<extend>>
-UC18 ..> UC17 : <<extend>>
+  actor "Гость" as Guest
+  actor "Покупатель" as Buyer
+  actor "Администратор" as Admin
+  actor "Таймер\n(планировщик)" as Timer <<time>>
+  actor "Сайт магазина" as Shop <<system>>
+  actor "Почтовый шлюз" as Mail <<system>>
 
-UC05 -- Shop
-UC01 -- Mail
-UC18 -- Mail
+  rectangle "PriceRadar" {
+    usecase UC01 as "UC-01 Зарегистрироваться"
+    usecase UC02 as "UC-02 Войти и выйти"
+    usecase UC03 as "UC-03 Удалить учётную запись"
 
-note right of UC10
-  Точка расширения: «скидка помечена
-  как возможно фиктивная»
-end note
-note right of UC17
-  Точка расширения: «цена изменилась
-  и выполнено условие алерта»
-end note
-note bottom of Admin
-  Администратор обобщает Покупателя:
-  ему доступны все прецеденты Покупателя
-end note
+    usecase UC04 as "UC-04 Добавить товар по ссылке"
+    usecase UC05 as "UC-05 Получить цену\nчерез Price API"
+    usecase UC06 as "UC-06 Изменить параметры товара"
+    usecase UC07 as "UC-07 Удалить или\nархивировать товар"
+    usecase UC08 as "UC-08 Управлять списками"
+
+    usecase UC09 as "UC-09 Настроить проверки и алерты"
+
+    usecase UC10 as "UC-10 Просмотреть ленту скидок\n//extension points://\nскидка помечена как возможно фиктивная"
+    usecase UC11 as "UC-11 Пометить фиктивную скидку"
+    usecase UC12 as "UC-12 Просмотреть рекомендацию\nи график цены"
+    usecase UC13 as "UC-13 Составить план покупок"
+    usecase UC14 as "UC-14 Выгрузить историю в CSV"
+
+    usecase UC15 as "UC-15 Опубликовать или отозвать\nссылку на список"
+    usecase UC16 as "UC-16 Просмотреть публичный список"
+
+    usecase UC17 as "UC-17 Проверить цену товара\n//extension points://\nцена изменилась и выполнено условие алерта"
+    usecase UC18 as "UC-18 Доставить алерт"
+
+    usecase UC19 as "UC-19 Редактировать календарь\nраспродаж"
+    usecase UC20 as "UC-20 Включить или отключить\nадаптер магазина"
+
+    note "condition (UC-18 → UC-17): цена изменилась\nи выполнено условие алерта" as N1
+
+  }
+
+  Admin --|> Buyer
+
+  Guest --> UC01
+  Guest --> UC16
+  Buyer --> UC02
+  Buyer --> UC03
+  Buyer --> UC04
+  Buyer --> UC06
+  Buyer --> UC07
+  Buyer --> UC08
+  Buyer --> UC09
+  Buyer --> UC10
+  Buyer --> UC12
+  Buyer --> UC13
+  Buyer --> UC14
+  Buyer --> UC15
+  Admin --> UC19
+  Admin --> UC20
+  Timer --> UC17
+
+  UC04 ..> UC05 : «include»
+  UC17 ..> UC05 : «include»
+  UC13 ..> UC12 : «include»
+  UC11 ..> UC10 : «extend»
+  UC18 ..> UC17 : «extend»
+
+  UC05 --> Shop
+  UC01 --> Mail
+  UC18 --> Mail
+}
 @enduml

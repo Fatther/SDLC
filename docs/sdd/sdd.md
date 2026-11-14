@@ -366,14 +366,14 @@ plan(budget, items):  # жадный выбор
 - **ID**: 015-activity
 - **Title**: Диаграммы активности
 - **Viewpoint**: Активность
-- **Representation**: `../uml/img/02-activity-add.png` — добавление товара (UC-04, UC-05); `../uml/img/03-activity-check.png` — проверка цены и алерт (UC-17, UC-18).
+- **Representation**: `../uml/img/03-activity-check.png` — проверка цены и алерт (UC-17, UC-18).
 - **More Information**: REQ-FUNC-003/004, 008…015; ADR-004, ADR-005, ADR-007.
 
 ### 016-sequence
 - **ID**: 016-sequence
 - **Title**: Диаграммы последовательности
 - **Viewpoint**: Последовательность (динамика)
-- **Representation**: `07-add-product.png`, `08-check-alert.png`, `09-public-list.png`. Линии жизни соответствуют модулям представления 002.
+- **Representation**: `09-public-list.png`.
 - **More Information**: REQ-FUNC-003, 012, 025, 026; ADR-003, ADR-005, ADR-006.
 ---
 
