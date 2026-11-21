@@ -1,0 +1,101 @@
+@startuml 04-public-list
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor Whitea
+skinparam roundcorner 0
+skinparam ArrowColor Black
+skinparam ArrowFontSize 10
+skinparam sequence {
+  ParticipantBackgroundColor White
+  ParticipantBorderColor Black
+  ParticipantFontStyle plain
+  ParticipantFontSize 11
+  ActorBackgroundColor White
+  ActorBorderColor Black
+  ActorFontStyle bold
+  LifeLineBorderColor Black
+  LifeLineBackgroundColor White
+  GroupBackgroundColor White
+  GroupBorderColor Black
+  GroupHeaderFontStyle bold
+  GroupFontSize 10
+  BoxBorderColor Black
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam titleBorderColor Black
+skinparam titleBorderThickness 1
+skinparam titleBorderRoundCorner 0
+skinparam titleBackgroundColor White
+skinparam titleFontStyle bold
+skinparam titleFontSize 11
+
+title sd  Просмотр публичного списка (UC-15, UC-16)
+autonumber 1 1 "0:"
+hide footbox
+
+actor "Гость" as G
+actor "Покупатель\n(владелец)" as O
+participant "<b>:Клиент SPA</b>" as UI <<boundary>>
+participant "<b>:ShareController</b>" as SC <<controller>>
+participant "<b>:IpRateLimiter</b>\n(60 запросов/мин)" as RL <<component>>
+participant "<b>:ShareService</b>" as SS <<service>>
+participant "<b>:WishlistReader</b>" as WR <<repository>>
+participant "PostgreSQL" as DB <<database>>
+
+group Публикация (UC-15)
+  O -> UI : «Поделиться списком»
+  UI -> SC : PUT /api/v1/lists/{id}/share
+  activate SC
+  SC -> SS : createOrRotate(listId, ownerId)
+  activate SS
+  SS -> SS : token = random(32 байта)
+  SS -> DB : UPSERT share_link(list_id, token_hash = SHA-256(token))
+  DB --> SS : OK
+  SS --> SC : token
+  deactivate SS
+  SC --> UI : 200 {url: /s/{token}}
+  deactivate SC
+  UI --> O : ссылка для копирования
+end
+
+group Просмотр (UC-16)
+  G -> UI : открывает /s/{token}
+  UI -> SC : GET /s/{token}
+  activate SC
+  SC -> RL : tryAcquire(ip)
+  alt лимит превышен
+    RL --> SC : отказ
+    SC --> UI : 429 + Retry-After
+    UI --> G : «Слишком много запросов»
+  else лимит не превышен
+    RL --> SC : OK
+    SC -> SS : resolve(token)
+    activate SS
+    SS -> DB : SELECT … WHERE token_hash = SHA-256(token)\nAND revoked_at IS NULL
+    DB --> SS : запись или пусто
+    alt ссылка не найдена или отозвана
+      SS --> SC : не найдено
+      SC --> UI : 404
+      UI --> G : «Ссылка недействительна»
+    else ссылка активна
+      SS -> WR : readPublic(listId)
+      activate WR
+      WR -> DB : SELECT товары списка
+      DB --> WR : строки
+      WR --> SS : публичное представление
+      deactivate WR
+      SS --> SC : список (только чтение)
+      deactivate SS
+      SC --> UI : 200 JSON
+      UI --> G : список без приватных данных
+    end
+  end
+  deactivate SC
+end
+@enduml

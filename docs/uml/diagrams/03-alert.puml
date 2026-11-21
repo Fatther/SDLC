@@ -1,0 +1,64 @@
+@startuml 03-state-alert
+title stm Alert [состояния алерта]
+
+skinparam linetype polyline
+hide empty description
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam state {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  RoundCorner 25
+}
+skinparam note {
+  BackgroundColor #F8F8F8
+  BorderColor Black
+}
+
+state Pending
+Pending : entry / запись outbox создана
+Pending : do / ждать next_attempt_at <= now()
+
+state Sending
+Sending : do / отправить сообщение в канал
+
+state Retry
+Retry : entry / attempts++
+Retry : do / ждать срока повтора
+
+state Delivered
+Delivered : алерт виден в приложении
+
+state Read
+Read : алерт прочитан
+
+state Failed
+Failed : entry / зафиксировать в журнале\nи метриках
+
+state EndRead <<end>>
+state EndFailed <<end>>
+
+' --- основной поток: сверху вниз ---
+[*] -down-> Pending : create /\nалерт и outbox\nв одной транзакции
+Pending -down-> Sending : захват записи\n[next_attempt_at <= now()]
+Sending -down-> Delivered : канал принял
+Delivered -down-> Read : пользователь\nоткрыл алерт
+Read -down-> EndRead
+
+' --- повторы: вправо ---
+Sending -right-> Retry : ошибка\n[attempts < 5]\n/ attempts++
+Retry -left-> Sending : срок повтора
+
+' --- исчерпаны попытки: влево ---
+Sending -left-> Failed : ошибка\n[attempts = 5]
+Failed -down-> EndFailed : в журнале
+
+' --- перезапуск сервиса: обратно вверх ---
+Sending -up-> Pending : рестарт /\nтайм-аут захвата
+
+note left of Failed
+  Состояние Failed фиксируется
+  в журнале и метриках
+end note
+@enduml

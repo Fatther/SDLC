@@ -1,0 +1,81 @@
+@startuml 02-activity-check
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor White
+skinparam roundcorner 0
+skinparam ArrowColor Black
+skinparam ArrowFontSize 10
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+  FontSize 11
+}
+skinparam activityDiamond {
+  BackgroundColor White
+  BorderColor Black
+  FontSize 10
+}
+skinparam activityStart {
+  Color Black
+}
+skinparam activityEnd {
+  Color Black
+}
+skinparam swimlane {
+  BorderColor Black
+  BorderThickness 1
+  TitleFontStyle bold
+}
+skinparam titleBorderColor Black
+skinparam titleBorderThickness 1
+skinparam titleBorderRoundCorner 0
+skinparam titleBackgroundColor White
+skinparam titleFontStyle bold
+skinparam titleFontSize 11
+
+title act  Проверка цены и создание алерта (UC-17, UC-18)
+
+|Планировщик|
+start
+:Выбрать пачку задач\nSELECT … FOR UPDATE SKIP LOCKED;
+
+|Monitor|
+repeat
+  :Взять следующий товар;
+  |Price API|
+  :Запросить цену по URL;
+  |Monitor|
+  if (Цена получена?) then (Да)
+    :Обнулить счётчик ошибок,\nснять статус «Ошибка проверки»;
+    if (Цена или наличие\nизменились?) then (Да)
+      :Добавить запись в историю цен;
+      |Alerts|
+      if (Цена ≤ целевой\nили снижение ≥ N %?) then (Да)
+        if (Новая цена и меньше\n3 алертов за сутки?) then (Да)
+          :В одной транзакции записать\nalert и outbox-сообщение;
+        else (Нет)
+          :Подавить алерт\n(дедупликация);
+        endif
+      else (Нет)
+      endif
+      |Monitor|
+    else (Нет)
+      :Обновить время последней проверки\nв существующей записи;
+    endif
+  else (Нет)
+    :Увеличить счётчик ошибок;
+    if (Подряд 3 ошибки?) then (Да)
+      :Установить статус «Ошибка проверки»;
+      |Alerts|
+      :Создать одно уведомление об ошибке;
+      |Monitor|
+    else (Нет)
+      :Назначить повтор через 1, 2, 4 мин;
+    endif
+  endif
+  :Вычислить next_check_at;
+repeat while (Остались задачи\nв пачке?) is (Да) not (Нет)
+stop
+@enduml
